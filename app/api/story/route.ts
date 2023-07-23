@@ -9,36 +9,48 @@ const configuration = new Configuration({
 const openai = new OpenAIApi(configuration);
 
 export async function POST(request: Request) {
-    const {lon, lat} = await request.json()
+    try {
+        const {lon, lat} = await request.json()
 
-    if (!lon || !lat) {
-        return NextResponse.json({ error: "No lon or lat provided"})
-    }
-
-    const geoNamesRes = await fetch(
-        `http://api.geonames.org/citiesJSON?north=${lat+1}&south=${lat-1}&east=${lon+1}&west=${lon-1}&lang=en&maxRows=20&username=${GEONAMES_USERNAME}`
-    )
-
-    const data = await geoNamesRes.json()
-    if (data && data.geonames && data.geonames.length > 0) {
-        const largeCities = data.geonames.filter((city: any) => city.population > 100000).sort((a: any, b: any) => b.population - a.population)
-        if (largeCities.length > 0) {
-            const city = largeCities[0]["name"] + ", " + largeCities[0]["countrycode"]
-            const story = await generateStory(city)
-            if (!story) {
-                return NextResponse.json({ error: "No story generated"})
-            }
-            const return_response = {
-                city: city,
-                story: story
-            }
-            return NextResponse.json(return_response)
-        } else {
-            return NextResponse.json({ error: "No large cities found"})
+        if (!lon || !lat) {
+            console.log("#ERROR# No lon or lat provided")
+            return NextResponse.json({ error: "No lon or lat provided"})
         }
-    } else {
-        return NextResponse.json({ error: "No cities found"})
-    }
+
+        const geoNamesRes = await fetch(
+            `http://api.geonames.org/citiesJSON?north=${lat+1}&south=${lat-1}&east=${lon+1}&west=${lon-1}&lang=en&maxRows=20&username=${GEONAMES_USERNAME}`
+        )
+
+        if (!geoNamesRes.ok) {
+            console.log("#ERROR# Geonames request failed")
+            return NextResponse.json({ error: "Geonames request failed"})
+        }
+
+        const data = await geoNamesRes.json()
+        console.log("Geonames data: ", data)
+
+        if (data && data.geonames && data.geonames.length > 0) {
+            const largeCities = data.geonames.filter((city: any) => city.population > 100000).sort((a: any, b: any) => b.population - a.population)
+            if (largeCities.length > 0) {
+                const city = largeCities[0]["name"] + ", " + largeCities[0]["countrycode"]
+                const story = await generateStory(city)
+                if (!story) {
+                    return NextResponse.json({ error: "No story generated"})
+                }
+                const return_response = {
+                    city: city,
+                    story: story
+                }
+                return NextResponse.json(return_response)
+            } else {
+                return NextResponse.json({ error: "No large cities found"})
+            }
+        } else {
+            return NextResponse.json({ error: "No cities found"})
+        }} catch (error) {
+            console.log("#ERROR# Error in story generation: ", error)
+            return NextResponse.json({ error: "Error in story generation"})
+        }
 }
 
 const generateStory = async (city: String) => {
@@ -49,5 +61,8 @@ const generateStory = async (city: String) => {
         messages: [{role: "system", content: system},
         {role: "user", content: user}],
       });
+    if (!chatCompletion.data.choices[0].message?.content) {
+        console.error("#ERROR# OPENAI DID NOT WORK")
+    }
     return chatCompletion.data.choices[0].message?.content
 }
