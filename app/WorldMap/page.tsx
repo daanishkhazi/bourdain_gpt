@@ -49,10 +49,6 @@ export default function WorldMap() {
   return (
     <div className="flex-col py-36">
       <div ref={divRef} className="w-full h-auto" />
-      <p>
-        Latitude: {coordinates.lat.toFixed(2)}, Longitude:{" "}
-        {coordinates.lon.toFixed(2)}
-      </p>
     </div>
   );
 }
