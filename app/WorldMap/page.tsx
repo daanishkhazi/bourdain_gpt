@@ -2,6 +2,7 @@
 
 import React, { useEffect, useRef, useState } from "react";
 import * as d3 from "d3";
+import Spinner from "@/components/spinner";
 
 export default function WorldMap() {
   const divRef = useRef<HTMLDivElement | null>(null);
@@ -15,30 +16,41 @@ export default function WorldMap() {
     text: "",
     city: "",
   });
+  const [loading, setLoading] = useState(false);
 
   const handleMouseClick = async (lon: number, lat: number) => {
     console.log(lon, lat);
+    setLoading(true);
     const response = await fetch("/api/story", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lon, lat }),
     });
+    setLoading(false);
     if (!response.ok) {
-      console.log("No nearby cities found");
+      console.log(response);
       setPopup({
         visible: true,
-        text: "No nearby cities found",
+        text: "No nearby cities found. Try choosing a different location",
         city: "",
       });
       return;
     }
     const data = await response.json();
+    console.log("data", data);
+    if (!data.story || !data.city) {
+      setPopup({
+        visible: true,
+        text: "No nearby cities found. Try choosing a different location",
+        city: "",
+      });
+      return;
+    }
     setPopup({
       visible: true,
       text: data.story,
       city: data.city,
     });
-    console.log("popup", popup.text);
   };
 
   useEffect(() => {
@@ -83,8 +95,14 @@ export default function WorldMap() {
   }, []);
 
   return (
-    <div className="flex-col py-36">
+    <div className="flex-col py-24">
       <div ref={divRef} className="w-full h-auto" />
+
+      {loading && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
+          <Spinner />
+        </div>
+      )}
 
       {popup.visible && (
         <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
