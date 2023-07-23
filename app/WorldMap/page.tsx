@@ -6,21 +6,39 @@ import * as d3 from "d3";
 export default function WorldMap() {
   const divRef = useRef<HTMLDivElement | null>(null);
   const [coordinates, setCoordinates] = useState({ lon: 0, lat: 0 });
+  const [popup, setPopup] = useState<{
+    visible: boolean;
+    text: string;
+    city: string;
+  }>({
+    visible: false,
+    text: "",
+    city: "",
+  });
 
-  const handleMouseClick = async ({
-    lon,
-    lat,
-  }: {
-    lon: number;
-    lat: number;
-  }) => {
+  const handleMouseClick = async (lon: number, lat: number) => {
+    console.log(lon, lat);
     const response = await fetch("/api/story", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ lon, lat }),
     });
+    if (!response.ok) {
+      console.log("No nearby cities found");
+      setPopup({
+        visible: true,
+        text: "No nearby cities found",
+        city: "",
+      });
+      return;
+    }
     const data = await response.json();
-    console.log(data);
+    setPopup({
+      visible: true,
+      text: data.story,
+      city: data.city,
+    });
+    console.log("popup", popup.text);
   };
 
   useEffect(() => {
@@ -42,6 +60,8 @@ export default function WorldMap() {
         const lon = (x / svgWidth) * 360 - 180;
         const lat = 90 - (y / svgHeight) * 180;
         setCoordinates({ lon, lat });
+
+        svg.on("click", () => handleMouseClick(lon, lat)); // Send coordinates on click
 
         const circle = svg
           .append("circle")
@@ -65,6 +85,21 @@ export default function WorldMap() {
   return (
     <div className="flex-col py-36">
       <div ref={divRef} className="w-full h-auto" />
+
+      {popup.visible && (
+        <div className="fixed top-0 left-0 w-full h-full bg-black bg-opacity-50 flex items-center justify-center">
+          <div className="bg-white p-8 rounded-2xl text-center max-w-lg mx-auto">
+            <h1 className="text-xl font-bold pb-4">{popup.city}</h1>
+            <p className="line">{popup.text}</p>
+            <button
+              onClick={() => setPopup({ visible: false, text: "", city: "" })}
+              className="absolute top-5 right-5 text-2xl font-bold hover:scale-110 transition ease-in-out delay-50 rounded-2"
+            >
+              x
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

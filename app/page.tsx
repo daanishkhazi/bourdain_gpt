@@ -16,7 +16,7 @@ export default function Home() {
       <WorldMap />
 
       <>
-        <p className="italic">
+        <p className="italic text-center">
           Note: Using the best open source equirectangular projection I could
           find, please note that several borders may not be accurate{" "}
         </p>
