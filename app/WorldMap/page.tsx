@@ -7,6 +7,22 @@ export default function WorldMap() {
   const divRef = useRef<HTMLDivElement | null>(null);
   const [coordinates, setCoordinates] = useState({ lon: 0, lat: 0 });
 
+  const handleMouseClick = async ({
+    lon,
+    lat,
+  }: {
+    lon: number;
+    lat: number;
+  }) => {
+    const response = await fetch("/api/story", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ lon, lat }),
+    });
+    const data = await response.json();
+    console.log(data);
+  };
+
   useEffect(() => {
     d3.xml(
       "https://upload.wikimedia.org/wikipedia/commons/5/51/BlankMap-Equirectangular.svg"
